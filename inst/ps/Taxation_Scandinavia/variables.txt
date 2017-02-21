@@ -1,0 +1,36 @@
+orgvar | var | descr 
+
+Country | Country | Country name
+Code | Code | 3-letter ISO country code
+OECD | OECD | 1 = OECD member country
+year | year | Year
+cyear | cyear | Code-year dummy
+oecd_t1000 | oecd_t1000 | Taxes on income, profits and capital gains as percentage of GDP (source: OECD Tax Revenue Statistics)
+oecd_t2000 | oecd_t2000 | Social security contributions as percentage of GDP (source: OECD Tax Revenue Statistics)
+oecd_t3000 | oecd_t3000 | Taxes on payroll and workforce as percentage of GDP (source: OECD Tax Revenue Statistics)
+oecd_propertytax | oecd_propertytax | Taxes on property as percentage of GDP (source: OECD Tax Revenue Statistics)
+oecd_consumptiontax | oecd_consumptiontax | Taxes on goods and services as percentage of GDP (source: OECD Tax Revenue Statistics)
+oecd_othertax | oecd_othertax | Other taxes as percentage of GDP (source: OECD Tax Revenue Statistics)
+ief_taxpergdp2012 | ief_taxpergdp2012 | Tax revenue per nominal GDP in 2012 (source: Index of Economic Freedom, Heritage Foundation)
+pss_topmitr | pss_topmitr | Top Marginal Income Tax Rate (source: Piketty, Saez, and Stantcheva 2014)
+oecd_emp20to59 | oecd_emp20to59 | Employment rate among people aged 20 to 59
+oecd_f_emp20to59 | oecd_f_emp20to59 | Employment rate among females aged 20 to 59
+oecd_entrytax_emp20to59 | oecd_entrytax_emp20to59 | 
+oecd_entrytax_emp20to59_notransf | oecd_entrytax_emp20to59_notransf | 
+pwt_labshr_gdp | pwt_labshr_gdp | share of labour income in GDP (source: Penn World Tables)
+oecd_childcarepresch | oecd_childcarepresch | Child care preschool ???
+oecd_elderlycare | oecd_elderlycare | Elderly care  ???
+wb_laborforce_rate | wb_laborforce_rate | Labor force participation rate (% of population) ???
+laborsubsidy_share | laborsubsidy_share | 
+wb_employees_empselfemp | wb_employees_empselfemp | share of employees of employees + self-employed ??
+wb_employers_empselfemp | wb_employers_empselfemp | share of employers of employees + self-employed ??
+wb_natresorents_pct_gdp | wb_natresorents_pct_gdp | Total natural resources rents (% of GDP) ;sum of oil rents, natural gas rents, coal rents (hard and soft), mineral rents, and forest rents.
+gdppc_ppp | gdppc_ppp | GDP per capita, PPP (current international $). GDP per capita based on purchasing power parity
+ilo_evasivesectemp | ilo_evasivesectemp  | fraction of the workforce that (in part) provide labor intensive consumer services (source: ILO).
+wvs_trustpeople | wvs_trustpeople | weighted-average survey response to the question of whether most people can be trusted, on a binary scale (source: WVS)
+wvs_inneed_lazy | wvs_inneed_lazy | weighted-average survey response to the question of whether people live in need because of laziness or lack of willpower, or because of circumstances beyond individual control (injustice, luck, etc.).
+sk_proxy_wo_relig | sk_proxy_wo_relig | 
+polity2 | polity2 | Polity score (source: Polity IV)
+wgi_donatemoney2012 | wgi_donatemoney2012 | share of people donating money to charitable organizations in 2012 (source: World Giving Index, Charities Aid Foundation)
+oecd_hoursworked | oecd_hoursworked | Average annual hours worked is defined as the total number of hours actually worked per year divided by the average number of people in employment per year. (source: OECD)
+oecd_incometax | oecd_incometax | oecd_t1000 + oecd_t2000 + oecd_t3000

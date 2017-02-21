@@ -1,0 +1,12 @@
+Package: RTutorTaxationScandinavia
+Type: Package
+Title: RTutor problem set Taxation_Scandinavia
+Version: 0.1
+Date: 2017-21-02
+Author: David Hertle
+Maintainer: David Hertle <david.hertle@uni-ulm.de>
+Description: RTutor problem set Taxation_Scandinavia
+License: Not yet licensed by the author. The default suggestion for licensing is
+	Problem set content: Creative Commons (CC BY-SA)
+	Package code: GPL >= 2.0
+Depends: RTutor, ggplot2, dplyr, ggrepel, magrittr, stargazer, yaml, lmtest, gridExtra, regtools, lfe, googleVis, faraway

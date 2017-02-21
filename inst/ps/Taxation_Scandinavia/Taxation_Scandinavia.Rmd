@@ -1,0 +1,1400 @@
+# Problemset Taxation in Scandinavia
+
+
+```{r 'check_ps', include=FALSE}
+
+user.name = '' # set to your user name
+
+library(RTutor)
+check.problem.set('Taxation_Scandinavia', ps.dir, ps.file, user.name=user.name, reset=FALSE)
+
+# Run the Addin 'Check Problemset' to save and check your solution
+```
+
+
+Author: David Hertle
+
+
+In his paper **"How Can Scandinavians Tax So Much?"** Henrik Jacobsen Kleven (2014) analyzes why Scandinavians (defined as Denmark, Norway, and Sweden) are able to raise large amounts of tax revenue for redistribution and social insurance while maintaining some of the strongest economic outcomes in the world. He concludes three policies that can explain the anomaly.
+
+In this interactive *R* Tutorial, we are going to successively replicate his study and discuss the results.
+
+(The article and the corresponding public data is provided on the website of the *American Economic Association*. You can click on this [link](https://www.aeaweb.org/articles?id=10.1257/jep.28.4.77) to download it.)
+
+You do not need to solve the exercises in the given order but it is recommended to do so as it makes the most sense.
+
+## Exercise Content
+
+  1. Overview of the data set 
+  
+  2. Recap of aspects of taxation & policy implications
+  
+  2.1 Third-party information reporting
+  
+  2.2 Broad tax base
+  
+  2.3 Subsidization of goods complementary to working
+  
+  2.3.1 Graphical approach
+  
+  2.3.2 Linear Regressions
+  
+  3. Evidence on social and cultural influences
+
+  4. Conclusion
+  
+  5. References
+  
+  
+## Exercise 1 -- Overview of the data set
+
+First of all, it is necessary to familiarize with the existing data on an economic issue before working with the data. This chapter will teach you some useful *R* commands to get a brief overview of the data at hand.
+
+Hence, most of the data provided on the website of the *American Economic Association* is not used, I have shortened the data set to a minimum of used variables by reading in the original dta file (which is used by Stata data analysis software) with the `read.dta()` command from the `foreign` package and saved it as an rds file with the command `saveRDS()` for your convenience.
+ 
+
+info("saveRDS() / readRDS()") # Run this line (Strg-Enter) to show info
+
+
+Since this is your first task, most of the command is already given. But before you start entering any code you have to press the `edit` button or just click into the code box if the `edit` button is not displayed. This has to be done on every first task of each chapter.
+
+<br>
+
+
+**Task:** Use the command `readRDS()` to load the data set `data_condensed.rds` into the R workspace and assign it to the variable `data`. If you need help on how to use `readRDS()`, look at the info box above. When you are finished, click the `check` button to find out whether your solution is correct.
+
+If you need further advice, click the `hint` button, which contains more detailed information on your task. If the hint is not helpful enough, you can always access the solution with the `solution` button. Here you just need to uncomment the code (remove the `#`) and fill the placeholder `...` correctly.
+
+
+```{r "1__4"}
+# Adapt the following line of code
+# ... = readRDS("...")
+```
+
+
+                                       
+The data set contains various macroeconomic variables of several countries such as employment rates, tax rates for the years 1950 to 2012 and survey results. If you want to take a look at the data, you can click the `data` button located above every task.
+
+If you are interested in the original data sources Kleven (2014) used in his paper, have a look at the following info box.
+
+info("original data sources") # Run this line (Strg-Enter) to show info
+
+
+For further insights on the data, the `dplyr` package provides commands for common data manipulation tasks to prepare the data. We are going to use the intuitive functions from this package in the following parts of the problem set. 
+
+For instance, you can use the `n_distinct()` command from the package to count the number of unique rows of specified columns from your input data frame.
+
+info("n_distinct()") # Run this line (Strg-Enter) to show info
+
+Whenever you want to use functions from a package, you first have to load these packages with the command: `library(package name)`. In this *R problem set*, the required packages have to be loaded again for every chapter to work properly.
+
+<br>
+
+**Task:** Use the command `n_distinct()` to find out how many different countries are included in the data set. The variable name is called `Country`. If you need help on how to use the command, have a look at the info box above.
+
+
+```{r "1__7"}
+# loading the required package
+library(dplyr)
+# use the n_distinct() command
+```
+
+<br>
+
+#! addon__quiz__Countries in the data set
+
+<br>
+
+To get a further glimpse on the data we want to use the command `sample_n()` from the `dplyr` package to see all available variables. This command is similar to the basic `head()` or `tail()` command. The main difference is that it gives you not the first or last rows but randomly selects them from a table.
+
+<br>
+
+**Task:** Use the command `sample_n()` to print a sample containing 10 rows from the data frame called `data`.
+
+```{r "1__8"}
+# use the command sample_n(tbl, size) 
+```
+
+<br>
+
+As you may have noticed, you can get an additional description of each variable by hovering over their names on the displayed table. If you want to take a closer look at the data, you can click the `data` button, located above every task. This will take you to the `Data Explorer`.
+
+<br>
+
+To get some valuable descriptive statistics of the variables in our data set it is advisable to use the `summary()` function. It returns the minimum, maximum, mean, median, lower and upper quartiles for all columns at once. Additionally, it reports the number of missing values (NA's).
+
+**Task:** Use the command `summary()` to get a summary for the data frame `data`.
+
+
+```{r "1__9"}
+
+```
+
+The output from the summary function should give you a better picture about the distribution of the variables and their magnitude. This helps for the interpretation of the results in later tasks. Note that I created the variable `style` to distinguish the observation in the following tasks.
+
+<br>
+But now let's get back to the research question of the paper.
+
+**Reproducibility:** Since the presidential candidate Bernie Sanders had a vision of Nordic-style policies which he referred to as "democratic socialism" for the United States (Partanen, 2016) it poses the question again how it is possible for Scandinavia to achieve such results and if it could work in other countries as well.
+
+Although Scandinavian countries redistribute large amounts of income through taxes and transfers they belong to the leading position in the world in terms of income per capita and other economic and social outcomes. This case challenges the thesis that large redistribution has a harmful effect on economic growth and welfare. (Kleven, 2014)
+
+To get a rough overview, we want to compare the tax revenue (Tax per GDP) and tax rates in Scandinavia with other countries. For this purpose, we want to subset our data to a handful observations with the use of the `filter` function.
+
+info("filter()") # Run this line (Strg-Enter) to show info
+
+<br>
+
+**Task:** Use the command `filter()` from the `dplyr` package to subset the data frame `data` and only show the countries where the variable `Code` is equal to: `"SWE","NOR","DNK","USA","GBR","DEU"`.
+
+
+```{r "1__12"}
+# use the filter() command
+# Hint: You can copy the Codes from above
+```
+
+This command gives us too many observations. As we want to get a rough overview, we only want to show the most recent values of each country in our subset.
+
+To accomplish this and only return the most recent values of the tax revenue per GDP and tax rates of each country we use the `summarise_each_` command which allows to apply a function to one or more columns. In this case, we apply the `tail()` function that returns the last item of a vector or the last row of a data frame.
+
+info("summarise_each_()") # Run this line (Strg-Enter) to show info
+
+Performing many operations at once, without saving the results of each step can be confusing. But `dplyr` allows writing elegant chained code with the help of the pipe operator `%>%` from the package `magrittr`. This operator pipes the output of one function to the input of another function. For an example on how to use the `%>%` operator click the info box below.
+
+info("Chaining with pipe operator %>%") # Run this line (Strg-Enter) to show info
+
+<br>
+
+In the following, I provide the complete chained command to subset the data and summarize each variable of interest. In order to ensure that the function `tail()` gives us the most recent observations, it is crucial to sort the table by year with the `arrange()` function before collapsing it. The following task replicates the Table 1 from the paper. Note, that the figures are from 2012.
+
+
+**Task:** Just click check to save the subset into `tax_revenue` and show the resulting table.
+
+```{r "1__16"}
+
+tax_revenue <- data %>%
+  filter(Code %in% c("SWE","NOR","DNK","USA","GBR","DEU"))   %>%
+  # sort rows ascending by Country, Code then year
+  arrange(Country, Code, year) %>%
+  group_by(Country) %>%
+  summarise_each_(.,funs(tail(na.omit(.),n=1)), vars(ief_taxpergdp2012, oecd_incometax, oecd_propertytax, oecd_consumptiontax, pss_topmitr, oecd_entrytax_emp20to59)) %>%
+  # sort rows descending by tax/gdp ratio
+arrange(desc(ief_taxpergdp2012))
+
+# print resulting data frame
+tax_revenue
+```
+
+
+This table clearly shows that in our subset the Scandinavian countries are leading in terms of tax revenue per GDP reaching from 42.8 to 48.2 %. Whereas the US on the opposite end of the spectrum has only a share of 24.8 % of the GDP.  
+
+When considering the "participation tax rate" (PTR) in the last column called `oecd_entrytax_emp20to59` which is the effective average tax rate that captures the implicit tax on working, the contrast is even more impressive.
+
+info("participation tax rate") # Run this line (Strg-Enter) to show info
+
+
+The PTR is around 80% in Scandinavia. This means that an average worker in Scandinavia entering employment will be able to increase his consumption by only 20% of his earned income.
+
+#! addon__quiz__PTR
+
+
+<br>
+
+What is also striking is the much higher top marginal tax rate (= `pss_topmitr`) in Scandinavia. It is the fraction of tax paid on an additional unit of income for the top income earners. This raises the question whether governments should tax high earners more to face the large deficits and the widening inequality.
+
+One reason for lowering top tax rates in many countries was to increase work effort and boost business creation, thereby generating more economic growth. But Piketty et al. (2011) show by comparing the top tax rate changes and the average annual real GDP per capita of 18 OECD countries that there is no correlation.
+
+The foregone table only gives a brief insight on the differences between countries. But they among other things make Kleven (2014) ask how Scandinavians can collect so much tax and still feature high levels of real activity. If there are just specific features of policy design in place it would have policy implications for other countries. But if it is a special culture or social behavior in Scandinavia it would mean that it is hard to replicate the outcomes.
+
+<br>
+
+Before we go to the next exercise, I want to give you the opportunity to explore some relationships on your own. The following task creates a motion chart from the package `googleVis`. Per default, it depicts the participation tax rate on the x-axis and the employment rate among 20 to 59-year-olds on the y-axis. The size of each bubble shows GDP per capita and the color visualizes the tax/GDP ratio. But you can play around with the settings. If you click on the play button, you can see how each country develops over time. Note, that the chart shows only a subset of all OECD-members to keep it clear.
+
+If you just want to see how specific variables changed over time, you can switch to the line chart. 
+
+**Task:** Click check to create a motion chart. Note, that this takes a while to show.
+
+```{r "1__17",results='asis'}
+# loading the needed package
+library(googleVis)
+
+motion_plot = gvisMotionChart(subset(data, OECD == 1), idvar = "Country",
+                     timevar = "year", xvar = "oecd_entrytax_emp20to59", yvar = "oecd_emp20to59",
+                     colorvar = "ief_taxpergdp2012", sizevar = "gdppc_ppp")
+
+# plot the motion chart
+plot(motion_plot, tag = "chart")
+```
+
+
+## Exercise 2 -- Recap of aspects of taxation & policy implications
+
+Kleven (2014) identifies three policies in his paper that can help to explain the positive economic and social outcomes in Scandinavia. But before we get to the compiled policies, I want to briefly recap fundamental aspects of taxation. It's needless to say that it is necessary for every state to levy taxes for the continuity of political order.
+
+Tax revenues are used to finance public goods (education, infrastructure, healthcare, internal and external security, etc.) and to assure the enforcement of the law (police and courts). Additional objectives are to steer people's behavior and redistribute wealth aiming to increase social justice. But at the same time, it is intended to minimize distortions to economic decisions induced by taxes and subsidies.
+
+Through the years there have been developed several principles of sound tax policy which cannot be attained fully because all principles are somewhat competing objectives to each other.
+
+- Efficiency: The tax system should raise enough revenue that the government can adequately sponsor the provision of public goods without burdening the economy too much. Furthermore, it should be the objective to minimize the compliance costs for taxpayers and administration costs for governments.
+
+- Equity and Fairness: The tax to be paid should be measured by the taxpayer's ability. To take account of the fairness the tax burden of taxpayers in similar circumstances should be the same. This is referred to as horizontal equity. Whereas the vertical equity refers to the distribution of tax burden for taxpayers in different conditions. (California Tax Foundation)
+
+- Neutrality: Taxation should be neutral and equitable between all taxpayers. This ensures that taxation does not cause individuals or firms to alter their economic choices such as labor supply decisions and the allocation of resources. The decision making should only be based on economic merits than on basis of tax consequences. (California Tax Foundation)
+
+But complete neutrality is impossible to achieve and even undesirable to some extent if it contradicts other goals like redistribution of wealth or discouraging harmful behavior (smoking or excessive alcohol consumption). For this reason, a certain level of distortion to behavior is inevitable and even desired.
+
+- Certainty and simplicity: simple tax rules are easily understood by individuals and businesses and make their obligations and entitlements comprehensible. Which results not only in more transparency but minimize the burden of administration and compliance costs. (California Tax Foundation)
+
+
+## Exercise 2.1 -- Third-party information reporting
+
+The first part of the policy design that can help understand some questions is the Scandinavian tax system that has a wide coverage of third-party information reporting and well-developed information trails. This should ensure a low level of tax evasion.
+
+info("tax evasion") # Run this line (Strg-Enter) to show info
+
+Because of employers and financial institutions reporting taxable income of their employees or clients directly to the revenue department, there is no possibility for the taxpayer to evade taxes.
+
+This fact is backed by the results of the tax compliance study conducted by the (IRS, 2012) where they found that the evasion rate is 56% for income with little or no information reporting, 8% for income with substantial reporting and only 1% when there is substantial reporting and withholding.
+
+Given that self-employed are more likely to evade taxes because of the greater possibility due to self-reporting it is tempting to investigate the relationship between tax revenues and the ratio of self-employed workers across countries.
+
+Indeed, the share of self-employed workers is a plausible proxy for the degree of self-reporting in tax systems, so we use this macro data to plot it against the tax-to-GDP ratio. But before we can plot anything, we have to adapt the data to our needs.
+
+Specifically, we want to exclude 
+- countries that are not OECD members or have more than 20 % natural resource rents of their GDP
+- countries where GDP per capita based on purchasing power parity is less than USD 5000 (in 2005 PPP terms)
+
+<br>
+
+"The total natural resources rents are the sum of oil rents, natural gas rents, coal rents (hard and soft), mineral rents, and forest rents." (World Bank)
+
+**Task:** Just click the check button to filter the data and save it into `tax_take`. Note, that we only obtain the latest observation of each country with the `summarise_each_` function.
+
+
+```{r "2_1"}
+# loading the data
+data = readRDS("data_condensed.rds")
+# loading the required package
+library(dplyr)
+#
+tax_take <- data %>%
+  filter(OECD == 1 | wb_natresorents_pct_gdp < 0.20) %>%                                               
+  filter(gdppc_ppp >= 5000 & !is.na(gdppc_ppp)) %>%
+  # calculating fraction of self-employed
+  mutate(wb_selfemp_empselfemp = 1 - wb_employees_empselfemp) %>%
+  # excluding rows with missing values in the defined columns
+  filter(!is.na(wb_selfemp_empselfemp) & !is.na(ief_taxpergdp2012)) %>%
+  arrange(Country, Code, year) %>%
+  group_by(Country,Code) %>%
+  summarise_each_(.,funs(tail(.,n=1)), vars(ief_taxpergdp2012, wb_selfemp_empselfemp, wb_employees_empselfemp, wb_employers_empselfemp, style))
+```
+
+
+If you are interested in the exact calculation of the self-employed measure, take a look at the following info box.
+
+info("variable of interest 1") # Run this line (Strg-Enter) to show info
+
+
+Next step is to visualize the data at hand. Therefore, we want to use the `ggplot2` package which allows to easily create complex multi-layered graphs.
+
+info("ggplot2") # Run this line (Strg-Enter) to show info
+
+To get a basic understanding of the `ggplot2` commands and structure we first create a basic plot and add additional layers step by step later on.
+
+Before looking at the plot, I'd like you to take the following quiz on the empirical relationship between the fraction of self-employed and the tax share collected by the government.
+
+#! addon__quiz__self-employment and tax revenue
+
+<br>
+
+**Task:** Create a simple scatter plot using the `geom_point` object. Pass `tax_take` to the data argument of `ggplot`. Plot the tax revenue per GDP `ief_taxpergdp2012` on the y-axis and the measure for self-employed workers `wb_selfemp_empselfemp` on the x-axis and save the plot into the variable `plot1`. If you need more help take a look at the info box above for examples. After saving the plot, display it by calling the object `plot1`.
+
+
+```{r "2_1__4"}
+# loading the required package
+library(ggplot2)
+# Use the commented code as template
+# variable = ggplot(data=..., aes(x=...,y=...)) + geom_point()
+
+```
+
+<br>
+
+Except the relation between the variables, this very basic plot provides too little information for well-founded statements. Thus, we want to add layers to the saved plot by just using the `+` symbol. To add axis labels, we use the layer command `labs` and for the labeling of some observations, we use `geom_text_repel` from the `ggrepel` package. As the name suggest `ggrepel`, implements functions that repel overlapping labels from each other. Adding a linear regression line is done with the command `geom_smooth`.
+
+<br>
+*Note: The following plot replicates Figure 2A from the paper.*
+
+**Task:** Click check to extend the previous graph named `plot1` with the above mentioned layers and save the new plot into `plot1b`.
+
+```{r "2_1__5"}
+#loading the required package
+library(ggrepel)
+
+plot1b = plot1 + 
+  # adding a linear regression line without confidence interval around smooth
+  geom_smooth(method=lm, se=FALSE) +
+  # adding axis labeling
+  labs(x = "Fraction self-employed", y="Tax/GDP ratio") + 
+  # label points according to the variable 'style'
+  geom_text_repel(aes(label=ifelse(style == 1 | style == 2 ,Country,''))) + 
+  # adding points with different style options
+  geom_point(colour = ifelse(tax_take$style == 1 | tax_take$style == 2, "black", "grey")) +
+  # Limit the axes
+  coord_cartesian(xlim = c(0, 0.8), ylim = c(0,0.5), expand = FALSE) +
+  # using a theme with a white background
+  theme_bw()
+
+#show the plot
+plot1b
+```
+
+
+Now the plot has more explanatory power and shows that the Scandinavian countries are clear outliers because their tax takes are much larger compared to countries with similar levels of self-employment. This suggests that the tax revenue of the Scandinavian countries can be explained partly by the wide coverage of third-party reporting.
+
+The strong negative relationship between the fraction of self-employed workers and the Tax/GDP ratio indicates that third-party information is a key influence factor on a country's tax revenue.
+
+But as with most economic interrelations, one has to review the situation with a focus on possible reverse causality. In this particular case, a higher tax/GDP ratio could result in less self-employment, if for example, the tax rates for entrepreneurs are too high and therefore discourage them taking business risks.
+
+However, it is also possible that the Scandinavians are outliers because of the incompleteness of the self-employment measure as a proxy for self-reporting. To address this issue it is recommendable to take the evasive jobs into account as well to revise the self-reporting measurement.
+
+info("evasive jobs") # Run this line (Strg-Enter) to show info
+
+Accordingly, we combine the fraction of self-employed and workers in evasive jobs to a new proxy for self-reporting. If you want to know how the variables are calculated, take a look at the following info box.
+
+info("variable of interest 2") # Run this line (Strg-Enter) to show info
+
+As before, we exclude
+
+- countries that are not OECD members or have more than 20% natural resource rents of their GDP
+- countries where GDP per capita based on purchasing power parity is less than USD 5000 (in 2005 PPP terms)
+
+<br>
+
+**Task:** Click check to perform the data manipulation and assign the data frame to the variable `evasive`. Again, we are only interested in the latest observations.
+
+```{r "2_1__6"}
+
+evasive <- data %>%
+  filter(OECD == 1 | wb_natresorents_pct_gdp < 0.20) %>%                                               
+  filter(gdppc_ppp >= 5000 & !is.na(gdppc_ppp)) %>%
+  # create new variable: fraction of self-employed / (self-employed + employees)
+  mutate(wb_selfemp_empselfemp = 1 - wb_employees_empselfemp) %>%
+  # create new variable: adding fraction of workforce providing intensive consumer services 
+  mutate(selfempevasive = wb_selfemp_empselfemp + ilo_evasivesectemp) %>%
+  # exclude rows with missing values
+  filter(!is.na(selfempevasive) & !is.na(ief_taxpergdp2012)) %>%
+  arrange(Country, Code, year) %>%
+  group_by(Country,Code) %>%
+  # collapse the data frame, latest available observation
+  summarise_each_(.,funs(tail(.,n=1)), vars(ief_taxpergdp2012, selfempevasive, wb_selfemp_empselfemp, wb_employees_empselfemp, wb_employers_empselfemp,style)) 
+  
+```
+
+
+Next step is to visualize the relationship of the new proxy for third-party information reporting and the Tax/GDP ratio to check if this new measure returns different results as before.
+
+info("geom_smooth()") # Run this line (Strg-Enter) to show info
+
+<br>
+
+**Task:** Create a scatter plot (use the geometrical object `geom_point`) and save it into `plot2`. But this time plot the variable `selfempevasive` on the x-axis and `ief_taxpergdp2012` on the y-axis. Add a linear regression line with the command `geom_smooth` like we did with `plot1b`. This time use the table `evasive` as the data source. Show the plot afterward.
+
+```{r "2_1__8"}
+# Just edit the following command 
+# variable = ggplot(data = ..., aes(x=...,y=...)) + ... + ...
+
+# don't forget to show the plot afterward
+```
+
+
+Again this basic plot only gives a general overview about the correlation hence we need to add more objects such as labels to the graph to make it more informative.
+
+<br>
+*Note: The following plot replicates Figure 2B from the paper.*
+
+**Task:** Click check to change the color of some points and to add labels to `plot2`.
+
+```{r "2_1__9"}
+
+plot2b = plot2 + 
+  # changing the color of some points
+  geom_point(colour = ifelse(evasive$style == 1 | evasive$style == 2,"black","grey")) + 
+  # adding axis labels
+  labs(x = "Fraction of self-employed and employees in evasive jobs", y="Tax/GDP ratio") +
+  # labeling points conditional to the variable style
+  geom_text_repel(aes(label=ifelse(style == 1 | style == 2 ,Country,''))) + 
+  # Setting limits on the coordinate system to make it comparable to plot1
+  coord_cartesian(xlim = c(0, 0.8), ylim = c(0,0.5), expand = FALSE) +
+  theme_bw()
+
+#plot output
+plot2b
+```
+
+
+You can see that Mexico and Brazil have a similar fraction of people who are self-employed or work in evasive sectors. 
+Here, it is noteworthy though they have the same fraction the tax revenue of Brazil is three times larger than the Mexican tax revenue.
+
+The relation between the new self-reporting measure and the tax revenue seems to be alike but to compare the plots more closely we want to combine the plots by putting `plot1b` and `plot2b` with the `grid.arrange()` function from the `gridExtra` package side by side.
+
+info("grid.arrange()") # Run this line (Strg-Enter) to show info
+
+<br>
+
+**Task:** Arrange `plot1b` and `plot2b` side by side (= 2 columns) using the `grid.arrange()` command. You can see an example in the info box above.
+
+```{r "2_1__11",fig.width=12}
+# loading the needed package
+library(gridExtra)
+#Type code here
+
+```
+
+
+What we can see by comparing `plot1b` with `plot2b` is that the negative relationship strengthens. Which suggests that the availability of third-party information has a high impact on a country's tax take and the tax compliance of its citizens.
+
+This seems to support the result of James Alm et al. (2006) which indicate that tax compliance rates decline with a higher share of non-matched income.
+
+But the exemplary comparison of Brazil versus Mexico also suggests that third-party information reporting can only explain the tax-gdp ratio partly.
+
+Summing up the above mentioned this leads to the conclusion that a well-developed third-party reporting not only for labor income but also capital gains is necessary to keep tax evasion rates low, which could be additionally supported by verifiable information trails generated through market transactions. This would include payments from credit cards or bank transfers but also contracts with business partners so that tax authorities could easily obtain information about secret income. (Kleven, 2014)
+
+To establish such information trails a partial abolishment of cash could be supportive. Adding to this subject, the Harvard economist Kenneth Rogoff argues for a "less-cash-society" in his book "The Curse of Cash". To accomplish this, he proposes to phase out large-denomination bills which facilitate crime, corruption and tax evasion. (Swanson, 2016)
+
+
+## Exercise 2.2 -- Broad tax base
+
+A broad tax base reduces economic distortions and therefore may lead to more efficient allocation and helps to keep tax avoidance low because households' ability to avoid taxes through income-shifting or income-timing is eradicated.
+
+For every change in tax policy, it is important to consider the elasticity of taxable income (ETI) which can be used to calculate the revenue effects of tax rate changes and to further assess economic effects of changes in tax policy.
+
+info("ETI and Laffer Curve") # Run this line (Strg-Enter) to show info
+
+For example, Gruber and Saez (2002) have found a higher 0.57 ETI after deductions and a lower 0.17 elasticity of broad income before deductions in the US. Which implies that the reported taxable income is less affected by tax rate changes when the tax base is broader. These findings make Fieldhouse (2013) demand to broaden the tax base and simultaneously raise top rates.
+
+To broaden the tax base Fieldhouse (2013) suggests eliminating avoidance strategies through stricter tax enforcement, fewer deductions, exclusions, credits, exemptions, and preferential treatment of capital income over labor income.
+
+Such reforms would not only raise tax revenues but also regard the principle of horizontal equity, meaning that people with the same income do not pay significantly different effective tax rates. (Fieldhouse, 2013)
+
+*Result until now:* Low levels of ETI and near-absence of tax evasion can be achieved due to a wide coverage of third-party information reporting and little tax avoidance due to broad tax bases that offer little options to minimize tax liability.
+
+<br>
+
+We have covered the terms "tax evasion" and "tax avoidance" now which are often used interchangeably. Answer the following quiz question.
+
+#! addon__quiz__evasion vs avoidance
+
+
+## Exercise 2.3.1 -- Subsidization of goods complementary to working (graphics)
+
+Before you can understand the efficiency of a tax system, it is indispensable to consider how the revenue is spent.
+The Scandinavian countries spend large amounts on means-tested transfer programs which create additional implicit taxes on working. But at the same time, they spend huge amounts on public provision and subsidization of goods that are complementary to working including child care and elderly care which reduces the costs of market work. (Kleven, 2013)
+
+In this problem set, we want to focus on the extensive margin of labor supply (a measure how many people work), which is a key measure for understanding aggregate labor supply.
+
+First of all, we look on the distortions of labor participation induced by taxes and transfers. Therefore, we want to plot the total employment rate against the net-of-tax rate using the participation tax rate (see info box in chapter 1).
+
+<br>
+
+**Task:** Click check to filter the data set and get the most recent observation of each country and assign the resulting table to the variable `labor`.
+
+```{r "2_3_1"}
+# loading the data
+data = readRDS("data_condensed.rds")
+# loading the package
+library(dplyr)
+
+labor <- data %>%
+  #exlude non-OECD members and observation with missing values:
+  filter(OECD == 1 & !is.na(oecd_emp20to59) & !is.na(oecd_entrytax_emp20to59)) %>%
+  # sort ascending:
+  arrange(Country, Code, year) %>%
+  group_by(Country,Code) %>%
+  # summarise: get the last available row of each Country:
+  summarise_each_(.,funs(tail(.,n=1)), vars(oecd_emp20to59, oecd_entrytax_emp20to59, year,style)) %>%
+  # calculate the net-of-tax rate:
+  mutate(oecd_entrytax_emp20to59 = 1 - oecd_entrytax_emp20to59)
+  
+```
+
+
+
+<br>
+
+But now let's see what story the data tells. Therefore, we plot the total employment rate among 20 to 59-year-olds in dependency of the net-of-tax rate. 
+
+<br>
+
+*Note: The following plot replicates Figure 4A from the paper.*
+
+**Task:** Click check to create and show the plot.
+
+```{r "2_3_1__2"}
+library(ggplot2)
+library(ggrepel)
+
+plot3 = ggplot(data = labor, aes(x=oecd_entrytax_emp20to59, y=oecd_emp20to59)) +
+  geom_point(colour = ifelse(labor$style == 1 | labor$style == 2,"black","grey")) + 
+  geom_smooth(method=lm, se=FALSE) +
+  labs(x = "1 - participation tax rate", y="Employment rate") +
+  geom_text_repel(aes(label=ifelse(style == 1 | style == 2 ,Country,''))) +
+  coord_cartesian(xlim = c(0, 0.75), ylim = c(0.5,0.87), expand = FALSE) +
+  theme_bw()
+
+#show the plot
+plot3
+```
+
+
+Contrary to common sense you see that the two variables are negatively correlated across countries. Particularly Scandinavian countries impose large participation tax rates due to taxes and social contributions and nevertheless feature high employment. The Graph certainly does not allow a statement about causality but could point to other factors that confound the extensive labor responses. And may suggest that the structure of spending can either alleviate or reinforce tax distortions.
+
+<br>
+
+#! addon__quiz__Graph 4 b
+
+
+In the next graph, we want to examine the relation between the net-of-tax rate and the female employment rate. Therefore, we have to subset the data once again.
+
+<br>
+
+**Task:** Click check to create a subset for the female employment data and assign it to `labor_f`.
+
+```{r "2_3_1__3"}
+labor_f <- data %>%
+  # excluding observations with missing values
+  filter(!is.na(oecd_elderlycare) & !is.na(wb_laborforce_rate) & !is.na(oecd_entrytax_emp20to59) & !is.na(oecd_f_emp20to59)) %>%
+  # exclude non-OECD countries
+  filter(OECD == 1) %>%
+  # calculating the net-of-tax rate
+  mutate(oecd_entrytax_emp20to59 = 1 - oecd_entrytax_emp20to59) %>%
+  # subsidies as share of aggregate labor income of gdp
+  mutate(laborsubsidy_share = laborsubsidy_share / pwt_labshr_gdp) %>%
+  mutate(oecd_elderlycare = oecd_elderlycare / pwt_labshr_gdp) %>%
+  mutate(oecd_childcarepresch = oecd_childcarepresch / pwt_labshr_gdp) %>%
+  arrange(Country, Code, year) %>%
+  group_by(Country,Code) %>%
+  summarise_each_(.,funs(tail(.,n=1)), vars(oecd_f_emp20to59, oecd_entrytax_emp20to59, laborsubsidy_share, oecd_elderlycare, oecd_childcarepresch, pwt_labshr_gdp,style, year))
+```
+
+
+This time we plot the female employment rate among 20 - 59-year-olds versus the net-of-tax rate on participation to check if the slope for the female employment rate shows a different picture.
+
+<br>
+*Note: The following plot replicates Figure 4B from the paper.*
+
+**Task:** Click check to create and show the plot.
+
+
+```{r "2_3_1__4"}
+
+plot4 = ggplot(data = labor_f, aes(x=oecd_entrytax_emp20to59, y=oecd_f_emp20to59)) +
+  geom_point(colour = ifelse(labor_f$style == 1 | labor_f$style == 2,"black","grey")) + 
+  geom_smooth(method=lm, se=FALSE) +
+  labs(x = "1 - participation tax rate", y="Female employment rate") +
+  geom_text_repel(aes(label=ifelse(style == 1 | style == 2 ,Country,''))) + 
+  coord_cartesian(xlim = c(0, 0.75), ylim = c(0.5,0.87), expand = FALSE) +
+  theme_bw()
+
+#the next line prints plot4
+plot4
+```
+
+Both plots show a similar relationship between the net-of-tax rate and the employment rate. For a better comparison, we want to put the plots next to each other.
+
+
+**Task:** Use the `grid.arrange()` function to create a two column-layout for `plot3` and `plot4`.
+
+```{r "2_3_1__5",fig.width=12}
+# loading the needed package
+library(gridExtra)
+#Type code here
+#grid.arrange(... , ... , ncol = ...)
+```
+
+The negative correlation between the tax-transfer incentives and employment is even stronger although women are considered to be more responsive to such incentives. It is also noticeable, that the right graph features a higher dispersion around the blue line.
+
+It is important to note that there are many factors that affect the employment rate. Comparing Italy with the UK, you can see though they have almost the same PTR the difference in employment is significant. This suggests that the impact of taxes on employment is confounded by other influences. In this case the figures are from the year 2009 and could point out that the UK came through the crisis 2007/2008 more quickly than Italy, because of a more robust economy.  
+
+The relationships in the two graphs above stand in contrast to most macro literature, which claim that labor supply is positively correlated with net-of-tax rates. But Kleven's data would imply a strongly negative elasticity on the labor supply (at the extensive margin). The contrasting results can be explained by the neglect of the effect of means-tested transfers on the effective distortion of labor supply and differing time periods in the previous macro studies. This is demonstrated by Kleven (2014) in Figure A2.
+
+<br>
+
+To get a better understanding of the tax-transfer distortions, we want to analyze the interaction of employment and the participation subsidies (non-tax incentives) which consist of provision of childcare, preschool and elderly care. These subsidies should lower prices of goods that are complementary to working and therefore positively influence the labor supply. 
+
+<br>
+
+**Task:** Click check to subset the data and save it into `empl_subs`.
+
+```{r "2_3_1__6"}
+empl_subs <- data %>%
+  # exclude rows with missing values in the following columns
+  filter(!is.na(laborsubsidy_share) & !is.na(oecd_emp20to59) & !is.na(oecd_f_emp20to59)) %>%
+  # filter for OECD countries
+  filter(OECD == 1) %>%
+  # calculate labor subsidy share as a fraction of labor income share
+  mutate(laborsubsidy_share = laborsubsidy_share / pwt_labshr_gdp) %>%
+  arrange(Country, Code, year) %>%
+  group_by(Country,Code) %>%
+  summarise_each_(.,funs(tail(.,n=1)), vars(Country, Code, year, laborsubsidy_share, oecd_emp20to59, pwt_labshr_gdp, oecd_childcarepresch, oecd_elderlycare, style))
+
+```
+
+
+info("variable of interest 3") # Run this line (Strg-Enter) to show info
+
+Now, we translate the data about employment and subsidies into an expressive graph. As before, we first consider the total employment rate and compare it with the female employment later. 
+
+<br>
+#! addon__quiz__Graph 5
+
+
+*Note: The following plot replicates Figure 5A from the paper.*
+
+**Task:** Click check to create the plot.
+
+
+```{r "2_3_1__7"}
+
+plot5 = ggplot(data = empl_subs, aes(x=laborsubsidy_share, y=oecd_emp20to59)) +
+  geom_point(colour = ifelse(empl_subs$style == 1 | empl_subs$style == 2,"black","grey")) + 
+  geom_smooth(method=lm, se=FALSE) +
+  labs(x = "Participation subsidies (share of labor income)", y="Employment rate") +
+  geom_text_repel(aes(label=ifelse(style == 1 | style == 2 ,Country,''))) + 
+  theme_bw()
+
+#the next line prints plot5
+plot5
+```
+
+
+This figure shows the correlation between participation subsidies and the total employment rate. As expected, the two variables are positively correlated meaning that higher public support for childcare, preschool and elderly care is associated with a higher employment rate. 
+
+And again, the Scandinavian countries are outliers as they spend more on participation subsidies than any other country. Denmark spends about 5% of aggregate labor income. And Norway and Sweden are located at about 6%.
+
+If you bear in mind that Italy and the UK showed same levels of PTR, it is particularly eye-catching that the spending for the subsidies differ strongly. This could indicate that it makes a difference on how the tax revenues are spent.
+
+
+<br>
+
+In the next figure, we want to take a look at the cross-country relationship between female employment rate and the participation subsidies, because it can be speculated that women have a greater demand for these subsidies. Therefore, we create a new subset and assign the data to `empl_subs_f`.
+
+**Task:** Click check to subset the data and save it into `empl_subs_f`.
+
+```{r "2_3_1__8"}
+
+empl_subs_f <- data %>%
+  # exclude rows with missing values in the following columns
+  filter(!is.na(laborsubsidy_share) & !is.na(oecd_emp20to59) & !is.na(oecd_f_emp20to59)) %>%
+  # filter for OECD countries
+  filter(OECD == 1) %>%
+  mutate(laborsubsidy_share = laborsubsidy_share / pwt_labshr_gdp) %>%
+  arrange(Country, Code, year) %>%
+  group_by(Country,Code) %>%
+  summarise_each_(.,funs(tail(.,n=1)), vars(Country, Code, year, laborsubsidy_share, oecd_f_emp20to59, pwt_labshr_gdp, oecd_childcarepresch, oecd_elderlycare, style))
+
+```
+
+<br>
+
+*Note: The following plot replicates Figure 5B from the paper.*
+
+**Task:** Click check to create the plot.
+
+
+```{r "2_3_1__9"}
+
+plot6 = ggplot(data = empl_subs_f, aes(x=laborsubsidy_share, y=oecd_f_emp20to59)) +
+  geom_point(colour = ifelse(empl_subs_f$style == 1 | empl_subs_f$style == 2,"black","grey")) + 
+  geom_smooth(method=lm, se=FALSE) +
+  labs(x = "Participation subsidies (share of labor income)", y="Female employment rate") +
+  geom_text_repel(aes(label=ifelse(style == 1 | style == 2 ,Country,''))) + 
+  theme_bw()
+
+#the next line prints plot5
+plot6
+```
+
+
+The figure considering only the female employment rate tells a similar story as `plot5`. Higher participation subsidies seem to encourage labor supply. This applies especially to women as the slope of the line is greater than the one for the total employment. This corresponds with the finding of a research study that women give more elder care to aging parents than men. (Grigoryeva, 2014)
+
+Overall, it seems that the effects of taxation on employment are not independent of how the money is spent. Meaning that non-tax incentives like social programs boost labor force participation and therefore help to reduce tax distortions.
+
+Since working families have a greater need for these programs the positive influence of the labor subsidy share on the employment rate is not surprising.
+
+
+## Exercise 2.3.2 -- Subsidization of goods complementary to working (regressions)
+
+*Note:* Regressions are not part of the paper this problem set is based on. I added some to demonstrate how you can run regressions in R.
+
+To further investigate the relationship between the participation tax rate and the employment rate we want to perform linear regressions on the whole time series of our data set. But as we are interested in the responses of taxpayers to changes in the net-of-tax rate we use logarithmic values in order to obtain elasticity estimates.
+
+Thus, our first regression model looks as follows.
+
+$$log(employment~rate)~=~\alpha~+~e~\cdot~log(1~-~PTR)~+~\epsilon$$
+Where $\alpha$ is the intercept, $e$ the elasticity estimate and $\epsilon$ the error or disturbance term.
+
+
+Before we perform any regression, we need to prepare our data. First of all, we calculate the net-of-tax rate and exclude all observations with missing values in the columns needed for the regressions.
+
+<br>
+
+**Task:** Click check to calculate the net-of-PTR, filter the data and assign it to `reg_data1`.
+
+```{r "2_3_2"}
+# loading the data
+data = readRDS("data_condensed.rds")
+
+#loading the package
+library(dplyr)
+
+reg_data1 <- data %>%
+  select(Country,year,oecd_emp20to59,oecd_f_emp20to59,oecd_entrytax_emp20to59,oecd_entrytax_emp20to59_notransf)  %>%
+  mutate(oecd_entrytax_emp20to59 = 1 - oecd_entrytax_emp20to59) %>%
+  # exluding rows with missing values in following columns
+  filter(!is.na(oecd_entrytax_emp20to59) & !is.na(oecd_emp20to59) & !is.na(oecd_f_emp20to59) & !is.na(oecd_entrytax_emp20to59_notransf))
+
+```
+
+
+info("Linear Regression with lm()") # Run this line (Strg-Enter) to show info
+
+As this is the first regression, the commands are already given. As you can see, we use a pooled OLS regression, which treats all data points as separate observations, even though we have panel data, that consists of many countries over multiple time periods and we cannot assume that the observations are independently distributed across time. According to Wooldrige (2012) this most likely causes serial correlation of the residuals ($corr(\epsilon_t,\epsilon_{t-1}) \neq 0$). Which could have the following consequences:
+
+1. smaller estimated variance for $\hat{\beta}$ 
+2. decrease in $se(\hat{\beta})$ and increase of the t-statistics
+
+<br>
+
+**Task:** Click check to perform two log-log regressions on the response variables `oecd_emp20to59` and `oecd_f_emp20to59` using the explanatory variable `oecd_entytax_emp20to59` which is the net-of-tax rate on participation $1 - \tau$.
+
+```{r "2_3_2__3"}
+reg_PTR1 = lm(formula = log(oecd_emp20to59) ~ log(oecd_entrytax_emp20to59), data = reg_data1)
+reg_PTR2 = lm(formula = log(oecd_f_emp20to59) ~ log(oecd_entrytax_emp20to59), data = reg_data1)
+```
+
+
+To correctly interpret the results it is necessary to be aware of the calculation of the elasticity which has the following formula:
+
+$$e = \dfrac{\dfrac{\Delta~employment~rate}{employment~rate}}{\dfrac{\Delta~(1-r)}{(1-r)}}$$
+
+Now we want to generate an output of the regression results but instead of using the `summary()` command we want to utilize the `showreg()` function from the package `regtools` to show both regression results side by side.
+
+<br>
+
+**Task:** Click check to use the function `showreg()` to display the regression result of `reg_PTR1` and `reg_PTR2`
+
+```{r "2_3_2__4"}
+# loading the package
+library(regtools)
+
+showreg(list(reg_PTR1, reg_PTR2), 
+        custom.model.names = c("total employment", "female employment"),
+        digits = 7, robust = FALSE)
+```
+
+If we look at the output, we obtain upon regressing employment rate on the predictor (1 - PTR) we see that there is significant evidence (three stars) to conclude that there is a linear association between the logarithmized employment rate and the natural log of the net-of-tax rate in both regressions. But one has to be careful not to mix up correlation with causation.
+
+In this case, we don't want to pay much attention to the intercept because it's interpretation is meaningless due to the fact that there are no x-values (1 - PTR) of zero.
+
+For female employment, the estimated elasticity is -0.175 and for total employment rate, the estimated elasticity is -0.086. This would mean that if the net-of-tax rate increases by 1% the employment rate decreases by 0.175% and 0.086%, respectively.
+
+This seems to contradict any logic because one would think that if employees get to keep more of their income it has a positive influence on the extensive margin of labor. As we have not controlled for anything else, it could also suggest that there is omitted-variable bias because of important factors missing in our model.
+
+After interpreting the regression results we want to check our regressions for the assumptions of homoscedasticity by examining the vertical range in the residual plot. A well-behaved residual plot should be located randomly around the zero-line and form a "horizontal band" and feature no outliers.
+
+<br>
+
+**Task:** Click check to plot the residual plot of our regression.
+
+```{r "2_3_2__5"}
+plot(reg_PTR1,1)
+```
+
+
+Unfortunately, the assumption of homoscedasticity is violated as residuals are close to zero for larger values of `oecd_entrytax_emp20to59` and are more spread out for small values. Despite the presence of heteroskedasticity OLS regression estimators of coefficients are unbiased but the violation of the homoscedasticity assumption can invalidate inferences such as significance tests (Long and Ervin, 2000). To reduce these effects of heteroskedasticity on the inference we can employ clustered standard errors to our regression output later which are also heteroskedasticity-consistent. 
+
+*Note:* The residual plot of the second regression `reg_PTR2` shows an identical pattern suggesting that there is heteroskedasticity.
+
+To check if the error terms are normally distributed we use the normal probability plot of the residuals.
+
+<br>
+
+**Task:** Click check to plot the normal probability plot of the residuals.
+
+```{r "2_3_2__6"}
+plot(reg_PTR1,2)
+
+```
+
+Since the relationship between the theoretical quantiles and the sample quantiles are approximately linear except the heavy tails we can conclude that the error terms are only approximately normally distributed. Because of the large sample size, the error terms can deviate slightly from normality, according to the central limit theorem. Further Pallant (2007) states that with large sample sizes the violation of the normality assumption should not cause major problems.
+
+<br>
+
+But as we have panel data at hand, we should be aware of two possible problems: endogeneity (one or more explanatory variables are correlated with the error term, i.e., $\mathbb{E[ \varepsilon | x ]} \neq 0$) and autocorrelation in the errors. Therefore, we want to plot the residuals of only one country to investigate if there is a trend present.
+
+
+info("autocorrelation") # Run this line (Strg-Enter) to show info
+<br>
+
+In the next task, we save the residuals and the fitted values from the regression object `reg_PTR1` into the data frame `reg_data1` and create a subset containing only observations of Germany.
+
+**Task:** Click check to add the residuals and fitted values to `reg_data1` and to create a new data frame `deu` containing only observations of Germany.
+
+```{r "2_3_2__7"}
+
+# saving the regression results into reg_data1
+reg_data1$resid = reg_PTR1$residuals
+reg_data1$fit = reg_PTR1$fitted.values
+
+# creating a subset using the filter command
+deu = filter(reg_data1, Country == "Germany")
+```
+
+<br>
+
+As mentioned before we want to examine the time series of Germany for a trend. To plot the residuals against the time periods we use the basic `plot()` command.
+
+**Task:** Create a plot of the residuals for Germany on the y-axis against the `year` on the x-axis. Use the data frame `deu` as the data source. Remember, the residuals are stored in the variable `resid`.
+
+```{r "2_3_2__8"}
+# plot(x= ... , y = ...)
+```
+
+This graph suggests, as there is a trend identifiable, that the residual of one year depends on its past values.
+As the Gauss-Markow theorem is invalid when there is autocorrelation of error terms, the OLS estimator will be inefficient. This means that the calculated standard errors are no longer the smallest.
+
+Further, we assume that unobservable factors are not time-invariant which means that these country-specific factors are likely to change over time. This seems plausible as we observe a period from 1990 to 2011.
+
+Therefore, we want to use cluster-robust errors at the Country level to allow for the error terms to be correlated within a cluster, but still assume that they are not correlated between countries. Furthermore, we want to relax the homoskedasticity assumption and account for the fact that there might be unobservable characteristics between countries leading to heteroskedasticity as we have encountered in the residual vs. fitted values plot before.
+
+Now we regress using the `felm` function from the `lfe` package. In the function, we use the clustered error option which is defined after the third vertical bar (|). We need the clustered standard errors to account for deviation from the assumptions (homoscedasticity and independence of residuals). The cluster-robust errors allow for heteroskedasticity and autocorrelation within an entity (here country) but treat the errors as uncorrelated across countries (Stock and Watson 2010, p. 364).
+
+info("formula specification in felm") # Run this line (Strg-Enter) to show info
+<br>
+
+**Task:** Click check to perform the regression with clustering on country level.
+
+```{r "2_3_2__9"}
+# loading the required package
+library(lfe)
+
+clu1 = felm(formula = log(oecd_emp20to59) ~ log(oecd_entrytax_emp20to59) | 0 | 0 | factor(reg_data1$Country), data = reg_data1)
+```
+
+To compare the results with the previous regression on the total employment rate `reg_PTR1`, we use once again the `showreg` function.
+
+**Task:** Click check to generate the comparing regression output utilizing `showreg`.
+
+```{r "2_3_2__10"}
+library(regtools)
+
+showreg(list(reg_PTR1, clu1), custom.model.names = c("total employment", "clustered se"), 
+        digits = 7, robust = FALSE)
+
+```
+
+As you can see, the estimated coefficients do not change but the cluster robust errors are much larger than the standard errors from the regular OLS. Still, the coefficients seem to be significantly different from zero which is indicated by the three stars behind the estimates.
+
+<br>
+
+The previous regressions only considered the effect of the net-of-tax rate on the employment rates. But, as we have already discovered in Exercise 2.3.1, there are other influencing factors that should be taken into account. To investigate this further, we want to run a multiple linear regression. 
+
+First, we create a new subset of our data set.
+
+**Task:** Click check to create the subset and save it into `reg_new`.
+
+```{r "2_3_2__11"}
+reg_new = data %>%
+  select(Country,year,oecd_emp20to59,oecd_f_emp20to59,oecd_entrytax_emp20to59,pss_topmitr, laborsubsidy_share,pwt_labshr_gdp) %>%
+  # exclude observations with missing values
+  na.omit() %>%
+  # laborsubsidy share as a fraction of labor income of gdp
+  mutate(laborsubsidy_share = laborsubsidy_share / pwt_labshr_gdp) %>%
+  # calculate the net-of-tax rate
+  mutate(oecd_entrytax_emp20to59 = 1 - oecd_entrytax_emp20to59)
+
+```
+
+
+Before regressing, it is a good idea to investigate the relationship among our variables (`oecd_emp20to59`, `oecd_entrytax_emp20to59`, `pss_topmitr`, `laborsubsidy_share`). Therefore, we use a scatter plot matrix, which contains a scatter plot of each pair of variables.
+
+**Task:** Use the `pairs` function to generate a scatter plot matrix. Just replace the placeholder with the missing variables.
+
+```{r "2_3_2__12",fig.width=12, fig.height=12}
+# pairs(~oecd_emp20to59+ ... + pss_topmitr + ... ,data=reg_new)
+
+
+```
+
+As you can see, the scatter plots help to determine if we have a linear correlation between variables. It seems that `pss_topmitr` and `oecd_entrytax_emp20to59` have a linear correlation. Also, `laborsubsidy_sahre` is correlated with the `oecd_entrytax_emp20to59`. To verify it, we can calculate the pairwise correlation coefficients. This is helpful to detect multicollinearity, which is the condition where two or more predictor variables are highly correlated. The problem with multicollinearity is, that the estimates can drastically change to modifications of the model (e.g. adding/excluding explanatory variables) or the data (another sample of the population). Note, that the standard errors of the coefficients tend to be large of collinear predictors.
+
+**Task:** Use the `cor` function to calculate the correlation coefficients of the predictor variables `oecd_entrytax_emp20to59`, `pss_topmitr` and `laborsubsidy_share`. You just have to fill the placeholders correctly.
+
+```{r "2_3_2__13"}
+#cor(reg_new$oecd_entrytax_emp20to59,reg_new$pss_topmitr)
+#cor(reg_new$oecd_entrytax_emp20to59, ...)
+#cor(reg_new$pss_topmitr, ...)
+
+```
+
+The correlation coefficients of the net-of-tax rate between the top marginal tax rate and the net-of-tax rate between labor subsidy share seem to be severe. To further check for multicollinearity it is suggested to not only test for pairwise correlation but to check for sets of variables. We will get back to this topic after we have performed the regression.
+
+
+In the next step, we want to run the multiple linear regression. The regression model we consider is:  $Y = \beta_0 + \beta_1x_1 + \beta_2x_2 + \beta_3x_3 + \varepsilon_i$,
+
+where $x_1$ is `oecd_entrytax_emp20to59`, $x_2$ is `pss_topmitr` and $x_3$ is `laborsubsidy_share`. Further, we assume that $\varepsilon_i$ have a normal distribution with a mean of zero and constant variance $\sigma^2$ as in the simple linear regression before.
+
+Note that "linear" means that the model is linear in the parameters $\beta_i$. This implies that the predictor variables can be transformed e.g. $x^2$ or multiplied together $x_1*x_2$.
+
+
+**Task:** Perform a multiple linear regression with the three explanatory variables mentioned above. Use the `lm` function for this task. Show the results with the standard `summary` function afterward.
+
+```{r "2_3_2__14"}
+
+# reg_emp = lm(... ~ oecd_entrytax_emp20to59 + ... + laborsubsidy_share, data = reg_new)
+
+# show the regression results afterward
+
+```
+
+The $R^2$ tells us that 36.63% of the variation in the employment rate is reduced by taking into account (1 - PTR), top marginal rate and the labor subsidy share. 
+
+The stars behind each variable indicate the significance level on which we can reject the null hypothesis that the coefficients are equal to zero ($H_0:\beta=0$) and thus have no effect on the regressand. As you can see, the p-values for the t-tests suggest that only the slope for `oecd_entrytax_emp20to59` and the intercept are significantly different from zero. 
+
+Whereas, the null hypothesis of the global F-test is that the fit of an intercept-only model is equal to our model. If the p-value of the F-test is under the significance level of 5% we can reject the null hypothesis and conclude that our model provides a better fit than the intercept-only model. Here the p-value is at 1.062e-06 suggesting that our model is more useful in predicting the employment rate than the intercept-only model.
+
+$\beta_1$ represent the change in the mean response, per unit increase in the net-of-tax rate. Meaning that the employment rate decreases by 0.23507 if (1 - PTR) increases by 1 when all other predictors are held constant. Interpretation of the other coefficients is inappropriate because they are not significant.
+
+<br>
+
+To get back to the investigation of the degree of multicollinearity, we want to use the variance inflation factor (VIF).
+
+info("VIF") # Run this line (Strg-Enter) to show info
+
+In practice, a value above 10 is often used to conclude that multicollinearity is a problem. But solely looking on the VIF is not very meaningful because a VIF does not necessary mean that the standard deviation of $\hat{\beta_j}$ is too large to be useful. (Wooldrige, 2012, p. 86)
+
+
+**Task:** Use the `vif` function to get the variance inflation factor of each explanatory variable in `reg_emp`. You just have to pass the regression model to the function.
+
+```{r "2_3_2__15"}
+#loading package
+library(faraway)
+
+```
+
+As you can see, the VIFs are reaching from 2 to 4 which suggests that multicollinearity is not a major problem in our regression model. If we had VIF higher than 5, a possible remedy would be to remove highly correlated predictors from the model.
+
+
+<br>
+
+To further evaluate the regression analysis results we want to create an effect plot that visualizes the impact of each explanatory variable on the dependent variable.
+
+**Task:** Use `effectplot()` from the package `regtools` to show the impact of each explanatory variable in `reg_emp` for the variation of the explanatory variables from the 10% quantile to the 90% quantile. Additionally, plot the confidence intervals by using the option `show.ci = TRUE`.
+
+```{r "2_3_2__16"}
+# Enter your command here.
+#effectplot(lm object , further options)
+
+
+```
+
+As you can see, the effect plot allows comparing the impact of the variables better. At first glance, it illustrates if the effect on the outcome is positive or negative by differently colored bars. The impact is calculated by varying the explanatory variable from the 10% to the 90% quantile if the option `numeric.effect` is set to its default value. 
+
+What we are seeing is that the net-of-tax rate `oecd_entrytax_emp20to59` has the greatest influence on the employment. It decreases the employment rate by 0.081 ceteris paribus when it is varied from its 10% to 90% quantile.
+
+You may have noticed that the explanatory variables are ordered descending by their influence on the dependent variable. Thus, `pss_topmitr` with only -0.014 has the least effect, closely followed by `laborsubsidy_share`.
+
+To get a better grasp on the results it may help to know the values of the above mentioned quantiles. In the effectplot you can see three figures beneath each variable name. The number in the middle is the calculated median and the figures to the left and the right are the predefined quantiles.
+
+#! addon__quiz__effectplot quantiles 1
+
+<br>
+
+After looking at the regression results we want to check the model assumptions with the same methods as we did with the simple linear regression.
+
+<br>
+
+**Task:** Plot the residual plot for `reg_emp` using the function `plot()`. You just need to adapt the code.
+
+```{r "2_3_2__17"}
+# plot(reg object,1)
+```
+
+
+The changing vertical range of the residuals is suggestive of heteroskedasticity or non-constant variance. This represents predictive information that is leaking over into the residual plot. In other words, the residuals contain some of the variance. The red line is a smoothed curve, which affirms the linearity condition because it is relatively flat and remains close to 0.
+
+Additionally, we can test for heteroskedasticity with the Breusch Pagan test. The test fits a linear regression model to the residuals with the same explanatory variables as used in the previous regression model. Therefore, we can pass the "lm" object to the option `formula`. By default, it runs a studentized version of the test which is a robust modification.
+
+info("Breusch Pagan Test") # Run this line (Strg-Enter) to show info
+<br>
+
+**Task:** Perform a Breusch-Pagan-Test on the model `reg_emp` using the function `bptest()` from the package `lmtest`.
+
+```{r "2_3_2__18"}
+#loading the required package
+library(lmtest)
+```
+
+The p-value is at 0.008615 which means that we can reject the null hypothesis and assume heteroskedasticity.
+
+
+To see if the observed residuals are normally distributed we need to plot the normal quantile plot because one standard assumption in linear regression is that the theoretical residuals are independent and normally distributed.
+
+<br>
+
+**Task:** Plot the normal quantile plot for `reg_emp` using the `plot()` command again.
+
+
+```{r "2_3_2__19"}
+# plot(reg object,2)
+```
+
+
+We have a little deviation from the normal distribution in the tails. Some deviation is to be expected, as in reality a perfect normal distribution is rare. But as the sample size with only 64 observations is small, we should keep in mind that t-tests rely on the normality assumption. Thus, it is recommended to use more conservative p-values for conducting significance tests (Statistics Solutions, 2013).
+
+
+As we have panel data at hand, generally it would be necessary to check if the error terms are independent and if they are autocorrelated. But as there are only up to four observations of each country with gaps, autocorrelaion is no problem. As mentioned above, the assumption of equal variance is violated, thus it is appropriate to correct the standard errors to reduce the effects of heteroskedasticity on inference and see if the coefficients are still significant.
+
+<br>
+
+There are different versions of heteroskedasticity-consistent standard errors. But Long and Ervin (2000) performed Monte Carlo simulations and found that HC0 often results in incorrect inferences for small sample sizes $N \le 250$. They recommend HC3 as this version works even for small samples with $N$ as small as 25. 
+
+**Task:** Click check to utilize the `showreg` function to show the regression results with a HC3 error.
+
+
+```{r "2_3_2__20"}
+showreg(list(reg_emp), custom.model.names = c("MLR with HC-error"), 
+        digits = 5, robust = TRUE, robust.type = "HC3")
+```
+
+
+The output seems to be a bit suprising, as the robust standard error is even smaller than the conventional SE. But Jörn-Steffen Pischke (2010) mentions that the conventional SE can be either upward or downward biased. He states that the reason for the upward biased SE is that covariates located far from their mean are associated with lower variance residuals.
+
+
+## Exercise 3 -- Evidence on social and cultural influences
+
+Some argue that Scandinavians collect more tax because of their "tax morale" that consist of intrinsic and social motivation. And indeed, there is micro evidence that social incentives play a role for tax compliance (Dwenger, Kleven, Rasul, and Rincke, 2016). In this chapter, we are going to look at some descriptive on the potential role of social and cultural aspects of tax income and redistribution of wealth.
+
+
+For the first descriptive evidence, we use the results on trust from the World Values Survey. The variable `wvs_trustpeople` is the fraction of people who answered "yes" to the question "Whether or not most people can be trusted".
+
+<br>
+
+To get the same results as Kleven (2014), we filter the data in this chapter according to the following rules:
+Exlude countries 
+- that are not OECD members or have more than 20 % natural resource rents of their GDP
+- where GDP per capita based on purchasing power parity is less than USD 5000 (in 2005 PPP terms)
+
+
+**Task:** Click check to create the subset and save it into `tax_trust`.
+
+```{r "3"}
+# loading the data
+data = readRDS("data_condensed.rds")
+#loading the required package
+library(dplyr)
+
+tax_trust <- data %>%
+  filter(OECD == 1 | wb_natresorents_pct_gdp < 0.20) %>%                                               
+  filter(gdppc_ppp >= 5000 & !is.na(gdppc_ppp)) %>%
+  # excluding rows with missing values for the needed variables
+  filter(!is.na(wvs_trustpeople) & !is.na(ief_taxpergdp2012)) %>%
+  arrange(Country, Code, year) %>%
+  group_by(Country,Code) %>%
+  summarise_each_(.,funs(tail(.,n=1)), vars(cyear, ief_taxpergdp2012, wvs_trustpeople, OECD, wb_natresorents_pct_gdp, gdppc_ppp, style))
+
+
+```
+
+<br>
+Before we plot the relation of tax revenue against the survey results on trust, take a guess on the following quiz.
+
+#! addon__quiz__tax trust
+
+
+<br>
+
+Okay, now let's create the corresponding visual to get a greater insight on how the trust people have for their fellows is associated with the tax revenue percentage of GDP.
+
+*Note: The following plot replicates Figure 6A from the paper.*
+
+**Task:** Click check to depict the data from `tax_trust`. On the x-axis, we plot the fraction of the people who answered with "yes" to the question and on the y-axis the tax/GDP ratio.
+
+
+```{r "3__2",fig.width=12}
+#loading the required packages
+library(ggplot2)
+library(ggrepel)
+
+plot5 = ggplot(data = tax_trust, aes(x=wvs_trustpeople, y=ief_taxpergdp2012)) +
+  geom_point(colour = ifelse(tax_trust$style == 1 | tax_trust$style == 2,"black","grey"), (aes(text = paste("Code:", tax_trust$Code)))) + 
+  geom_smooth(method=lm, se=FALSE) +
+  labs(x = "'Most people can be trusted'", y="tax/GDP ratio") +
+  geom_text_repel(aes(label=ifelse(style == 1 | style == 2 ,Country,''))) + 
+  theme_bw()
+
+# print the plot
+plot5
+```
+
+
+What's striking about this graph is the positive correlation between the trust measure and the tax take. Also, the fact that the Scandinavian countries feature higher levels of trust than elsewhere is noteworthy. This result supports a notion that "social cohesion enables citizens to live in societies where they enjoy a sense of belonging as well as trust, which
+makes policies more effective through a virtuous circle between a widely accepted social contract, increased
+citizens' willingness to pay taxes and improved public services" (OECD, 2011)
+
+But Kleven (2014) also notes the caveat that there are doubts whether the trust measure represents cultural attitudes or are endogenous outcomes of deeper institutions.
+
+<br>
+
+Maybe there is a difference in the willingness to pay taxes because the beliefs about the poor differ across countries. Therefore, we use a descriptive that describes the view on people in need. We use the variable `wvs_inneed_lazy` which is the fraction of people who believe that the social beneficiaries are in need because of their laziness or lack willpower. This survey data also stems from the World Values Survey.
+
+<br>
+
+**Task:** Click check to subset the data and assign it to `laziness`.
+
+```{r "3__3"}
+laziness <- data %>%
+  filter(OECD == 1 | wb_natresorents_pct_gdp < 0.20) %>%                                               
+  filter(gdppc_ppp >= 5000 & !is.na(gdppc_ppp)) %>%
+  filter(!is.na(wvs_inneed_lazy) & !is.na(ief_taxpergdp2012)) %>%
+  arrange(Country, Code, year) %>%
+  group_by(Country,Code) %>%
+  summarise_each_(.,funs(tail(.,n=1)), vars(cyear, ief_taxpergdp2012, wvs_inneed_lazy, OECD, wb_natresorents_pct_gdp, gdppc_ppp, style))
+
+```
+
+
+<br>
+*Note: The following plot replicates Figure 6B from the paper.*
+
+**Task:** Click check to plot the tax/GDP revenue against the fraction of people who believe that people in need are self-inflicted in their situation.
+
+
+```{r "3__4",fig.width=12}
+plot6 = ggplot(data = laziness, aes(x=wvs_inneed_lazy, y=ief_taxpergdp2012)) +
+  geom_point(colour = ifelse(laziness$style == 1 | laziness$style == 2,"black","grey")) + 
+  geom_smooth(method=lm, se=FALSE) +
+  # adding additional linear line for subset
+  geom_smooth(data=subset(laziness, gdppc_ppp >= 19624), aes(x=wvs_inneed_lazy, y=ief_taxpergdp2012,color="red"),method=lm,se=FALSE) +
+  labs(x = "'People in need because of laziness, lack of willpower'", y="tax/GDP ratio") +
+  geom_text_repel(aes(label=ifelse(style == 1 | style == 2 ,Country,''))) + 
+  theme_bw() 
+
+#print the plot
+plot6
+```
+
+This graph shows a weak negative relationship due to distortions of low-income countries. Kleven (2014) mentions that the slope of the blue line would be steeper if we control for income per capita or drop the low-income countries. To visualize the difference, I added the red line for countries with a GDP per capita higher than the median of about $19624. 
+
+In Norway, Sweden and Denmark only approx. 15% think that poor people are lazy or lack of willpower whereas 60% of Americans think that people are poor because of their shortcomings. Probably such rooted perception of the public prevents more redistribution and make tax law adjustments based on the model of Scandinavia impossible for some societies.
+
+Perhaps the Scandinavian beliefs about poor people can help to promote the willingness to pay taxes. 
+
+<br>
+
+In the next plot, we want to consider a behavioral measure. Kleven (2014) used a social index that combines civic participation, voter turnout and crime (as proxied by the homicide rate). Since the civic participation is only meaningful in democratic countries, all non-democratic countries are excluded.
+
+
+info("Social capital index") # Run this line (Strg-Enter) to show info
+
+<br>
+
+**Task:** Click check to subset the data and assign it to `social_cap`.
+
+```{r "3__5"}
+
+social_cap <- data %>%
+  filter(OECD == 1 | wb_natresorents_pct_gdp < 0.20) %>%                                               
+  filter(gdppc_ppp >= 5000 & !is.na(gdppc_ppp)) %>%
+  # excluding non-democratic countries
+  filter(polity2 > 0 | is.na(polity2)) %>%
+  filter(!is.na(sk_proxy_wo_relig) & !is.na(ief_taxpergdp2012)) %>%
+  arrange(Country, Code, year) %>%
+  group_by(Country,Code) %>%
+  summarise_each_(.,funs(tail(.,n=1)), vars(cyear, ief_taxpergdp2012, sk_proxy_wo_relig,polity2, OECD, wb_natresorents_pct_gdp, gdppc_ppp, style))
+
+```
+
+
+In our subset, the minimum of the social capital index is at -1.65 and the maximum is at 3.04.
+
+In the next step, we want to plot the social capital index against the tax/GDP ratio to explore one of the behavioral measures of social motivation.
+
+<br>
+*Note: The following plot replicates Figure 6C from the paper.*
+
+
+**Task:** Click check to create a scatter plot with the social capital index `sk_proxy_wo_relig` on the x-axis and the tax/GDP ratio on the vertical axis.
+
+
+```{r "3__6",fig.width=12}
+
+plot7 = ggplot(data = social_cap, aes(x=sk_proxy_wo_relig, y=ief_taxpergdp2012)) +
+  geom_point(colour = ifelse(social_cap$style == 1 | social_cap$style == 2,"black","grey")) + 
+  geom_smooth(method=lm, se=FALSE) +
+  labs(x = "Social capital index", y="tax/GDP ratio") +
+  geom_text_repel(aes(label=ifelse(style == 1 | style == 2 ,Country,''))) + 
+  theme_bw() 
+
+#print the plot
+plot7
+```
+
+
+As you can see in the plot above the social capital index is strongly positively related to the tax take and again the Scandinavian countries are scoring high.
+
+We can infer that the more people of a society are involved in an organization and make use of their right to vote the higher the tax take is. The aforementioned components of the social capital index can be understood as a measure for how much people are invested in their society and local community. Additionally, the inverse of the homicide rate represents a measure for people's personal integrity.  
+
+<br>
+
+Finally, we explore the hypothesis that mandatory contributions through tax payments crowd out voluntary contributions through donations. This would challenge the argument that countries with high tax take and generous social systems are more socially motivated than others. 
+
+Unfortunately, there is no information about the amount of charitable contributions across many countries. Therefore, Kleven (2014) considers the fraction of people who donated money using data from the World Giving Index.
+
+<br>
+
+**Task:** Click check to subset the data and assign it to `donating`.
+
+```{r "3__7"}
+
+donating <- data %>%
+  filter(OECD == 1 | wb_natresorents_pct_gdp < 0.20) %>%                                               
+  filter(gdppc_ppp >= 5000 & !is.na(gdppc_ppp)) %>%
+  filter(year >= 2008 ) %>%
+  # exclude rows with missing values
+  filter(!is.na(wgi_donatemoney2012) & !is.na(ief_taxpergdp2012)) %>%
+  arrange(Country, Code, year) %>%
+  group_by(Country,Code) %>%
+  summarise_each_(.,funs(tail(.,n=1)), vars(cyear, ief_taxpergdp2012, wgi_donatemoney2012, OECD, wb_natresorents_pct_gdp, gdppc_ppp, style))
+```
+
+<br>
+
+Again, take a guess on the quiz before we reveal the relationship of the fraction of people donating vs. the tax/GDP ratio.
+
+<br>
+
+#! addon__quiz__tax donations
+
+
+*Note: The following plot replicates Figure 6D from the paper.*
+
+**Task:** Click check to plot the fraction of people donating to charity `wgi_donatemoney2012` against the tax revenue `ief_taxpergdp2012`.
+
+
+```{r "3__8",fig.width=12}
+plot8 = ggplot(data = donating, aes(x=wgi_donatemoney2012, y=ief_taxpergdp2012)) +
+  geom_point(colour = ifelse(donating$style == 1 | donating$style == 2,"black","grey")) + 
+  geom_smooth(method=lm, se=FALSE) +
+  labs(x = "Fraction of people donating money to charity", y="tax/GDP ratio") +
+  geom_text_repel(aes(label=ifelse(style == 1 | style == 2 ,Country,''))) + 
+  theme_bw()
+
+# show the plot
+plot8
+```
+
+
+Unexpectedly the relationship is positive, suggesting that there is no crowding out and Scandinavia is almost involved in charity as countries with smaller tax takes. 
+
+But as mentioned before the tax-charity crowd-out may be proven by using donation amounts rather than the fraction of people donating to charity. According to the Charities Aid Foundation (2006) Americans donate 1.67% as a fraction of GDP whereas Germany and France donate 0.22% and 0.14%, respectively.
+
+
+## Exercise 4 -- Conclusion
+
+It is difficult to provide a conclusive answer to the initial question of the problem set how it is possible for Scandinavian countries to achieve such economic outcomes or more broadly: "Is it possible to design a tax system that raises large tax amounts while keeping tax evasion and tax distortions low?"
+
+But as the cross-country evidence in Exercise 3 shows, social and cultural factors have an effect on tax compliance. Of course, such cultural characteristics cannot be simply transferred. But in Exercise 2 we examined concrete policy implications discussed by Kleven (2014) that can easily be implemented in other countries. The first policy advice is to impose far-reaching information trails to promote tax compliance. Second, broadening the tax base limits effectively the range for tax avoidance. And to supplement the policy design large public expenditures for work complements is recommendable to make taxes less distortionary and promote high levels of employment.
+
+But Kleven (2014) also notes that these factors are linked together in a sense that the social and cultural characteristics facilitate the implementation of these policies and at the same time the social and cultural norms may be driven by the policies and institutions involved.
+
+With Scandinavian countries being small and homogeneous with limited racial and religious diversity and high human capital it is unclear how these policy implications apply to large, diverse and unequal countries.
+
+The conclusion is that countries around the world should thoroughly think about how to levy taxes and redistribute wealth with lesser distortions.
+
+<br>
+
+**Task:** Execute the following code to see all your awards you have collected.
+
+```{r "4"}
+awards()
+```
+
+  
+## Exercise 5 -- References
+
+**Academic Papers and Books**
+
+- Alm, J., Deskins, J.A. and McKee, M. (2006) ‘Third-Party income reporting and income tax compliance’, Andrew Young School of Policy Studies Research Paper Series, 06-35.
+
+- California Tax Foundation (no date) Principles of Sound Tax Policy. Available at: http://www.caltaxfoundation.org/reports/Principles%20of%20Sound%20Tax%20Policy.pdf (Accessed: 13 February 2017).
+
+- Charities Aid Foundation (2016) ‘International Comparisons of Charitable Giving November 2006’, CAF Briefing Paper, .
+
+- Dwenger, N., Kleven, H., Rasul, I. and Rincke, J. (2016) ‘Extrinsic and intrinsic motivations for tax compliance: Evidence from a field experiment in Germany’, American Economic Journal: Economic Policy, 8(3), pp. 203–32. doi: 10.1257/pol.20150083.
+
+- Fieldhouse, A. (2013) ‘Broadening the tax base and raising top rates are complements, not substitutes: 1986-style tax reform is a flawed template’, EPI-TCF ISSUE BRIEF, (361).
+
+- Grigoryeva, A. (2014) ‘When gender trumps everything: The division of parent care among siblings.’, Princeton, NJ: Center for the Study of Social Organization, .
+
+- Gruber, J. and Saez, E. (2002) ‘The elasticity of taxable income: Evidence and implications’, Journal of Public Economics, 84(1), pp. 1–32. doi: 10.1016/s0047-2727(01)00085-8.
+
+- Immervoll, H., Kleven, H.J., Kreiner, C.T. and Saez, E. (2007) ‘Welfare reform in European countries: A microsimulation analysis’, The Economic Journal, 117(516), pp. 1–44. doi: 10.1111/j.1468-0297.2007.02000.x.
+
+- Internal Revenue Service (2016) ‘Tax Gap Estimates for Tax Years 2008–2010’, .
+
+- Kleven, H.J. (2014) ‘How can Scandinavians tax so much? †’, Journal of Economic Perspectives, 28(4), pp. 77–98. doi: 10.1257/jep.28.4.77.
+
+- Long, J.S. and Ervin, L.H. (2000) ‘Using Heteroscedasticity consistent standard errors in the linear regression model’, The American Statistician, 54(3), pp. 217–224. doi: 10.1080/00031305.2000.10474549.
+
+- OECD (2011): "Perspectives on Global Development 2012: Social Cohesion in a Shifting World", OECD Publishing.
+
+- Pallant, J. (2007) SPSS survival manual: A step by step guide to data analysis using SPSS for windows (version 15). 3rd edn. Australia: Allen & Unwin.
+
+- Piketty, T., Saez, E. and Stantcheva, S. (2014) ‘Optimal taxation of top labor incomes: A tale of Three Elasticities’, American Economic Journal: Economic Policy, 6(1), pp. 230–271. doi: 10.1257/pol.6.1.230.
+
+- Saez, E., Slemrod, J. and Giertz, S. (2009) The elasticity of taxable income with respect to marginal tax rates: A critical review. National Bureau of Economic Research.
+
+- Stock, J.H. and Watson, M.W. (2010) Introduction to econometrics - 3rd edition. 3rd edn. Boston: Addison-Wesley.
+
+- The Tax Justice Network (2011) ‘The cost of tax abuse: A briefing paper on the cost of tax evasion worldwide’, .
+
+- Wooldridge, J. and Stewart, J. (2015) Introductory econometrics: A modern approach. 6th edn. United States: CENGAGE Learning Custom Publishing.
+
+**Websites**
+
+- Chamberlain, A. (2005) Ten principles of sound tax policy. Available at: http://taxfoundation.org/blog/ten-principles-sound-tax-policy (Accessed: 13 February 2017).
+
+- Partanen, A. (2016) What Americans Don’t Get About Nordic Countries. Available at: http://www.theatlantic.com/politics/archive/2016/03/bernie-sanders-nordic-countries/473385/ (Accessed: 13 February 2017).
+
+- Piketty, T., Saez, E. and Stantcheva, S. (2011) Taxing the 1%: Why the top tax rate could be over 80%. Available at: http://voxeu.org/article/taxing-1-why-top-tax-rate-could-be-over-80 (Accessed: 13 February 2017).
+
+- Pischke, J.-S. and Angrist, J.D. (2010) Heteroskedasticity and standard errors – big and small. Available at: http://www.mostlyharmlesseconometrics.com/2010/12/heteroskedasticity-and-standard-errors-big-and-small/ (Accessed: 13 February 2017).
+
+- Statistics Solutions (2013) Normality. Available at: http://www.statisticssolutions.com/academic-solutions/resources/directory-of-statistical-analyses/normality/ (Accessed: 16 February 2017).
+
+- Swanson, A. (2016) Maybe it’s time America gets rid of most of its cash. Available at: https://www.washingtonpost.com/news/wonk/wp/2016/09/27/maybe-its-time-america-gets-rid-of-most-of-its-cash/?utm_term=.0d4a91724802 (Accessed: 13 February 2017).
+
+
+**R and R packages**
+
+- Auguie, B. and Antonov, A. (2016) GridExtra: Miscellaneous Functions for ‘Grid’ Graphics. Available at: https://cran.r-project.org/web/packages/gridExtra/index.html (Accessed: 15 February 2017). R package version	2.2.1
+
+- Gaure, S. and Ragnar Frisch Centre for Economic Research (2016) Lfe: Linear Group Fixed Effects. Available at: https://cran.r-project.org/web/packages/lfe/index.html (Accessed: 15 February 2017). R package version 2.5-1998
+
+- Gesmann, M., de Castillo, D. and Cheng, J. (2017) GoogleVis: R Interface to Google Charts. Available at: https://cran.r-project.org/web/packages/googleVis/index.html (Accessed: 15 February 2017). R package version 0.6.1
+
+- Hothorn, T., Zeileis, A., Farebrother, R.W., Cummins, C., Millo, G. and Mitchell, D. (2017) Lmtest: Testing Linear Regression Models. Available at: https://cran.r-project.org/web/packages/lmtest/index.html (Accessed: 15 February 2017). R package version 0.9-34
+
+- Kranz, S. (2016) Regtools: Tools for presenting regressions results. Available at: https://github.com/skranz/regtools (Accessed: 15 February 2017). R package version 0.2
+
+- Kranz, S. (2015) RTutor: Creating R exercises with automatic assement of student’s solutions. Available at: https://github.com/skranz/RTutor (Accessed: 15 February 2017). R package version 2015.12.16
+
+- Core R Team (2016) Foreign: Read Data Stored by Minitab, S, SAS, SPSS, Stata, Systat, Weka, dBase, ... Available at: https://cran.r-project.org/web/packages/foreign/index.html (Accessed: 15 February 2017). R package version 0.8-67
+
+- Slowikowski, K. and Irisson, J.-O. (2016) Ggrepel: Repulsive Text and Label Geoms for ‘ggplot2’. Available at: https://cran.r-project.org/web/packages/ggrepel/index.html (Accessed: 15 February 2017). R package version 0.6.3
+
+- Wickham, H., Francois, R. and RStudio (2016) Dplyr: A Grammar of Data Manipulation. Available at: https://cran.r-project.org/web/packages/dplyr/index.html (Accessed: 15 February 2017). R package version 0.5.0
+
+- Wickham, H., Chang, W. and RStudio (2016) Ggplot2: Create Elegant Data Visualisations Using the Grammar of Graphics. Available at: https://cran.r-project.org/web/packages/ggplot2/ (Accessed: 15 February 2016). R package version 2.1.0
